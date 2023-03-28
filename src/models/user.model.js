@@ -80,6 +80,6 @@ userSchema.statics.isEmailTaken = async function (email) {
 
 const User = mongoose.model("User", userSchema);
 module.exports.User = User;
-module.exports = {
-  User,
-}
+// module.exports = {
+//   User,
+// }

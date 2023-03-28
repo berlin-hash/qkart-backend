@@ -25,26 +25,21 @@ const getUserById = async (id) => {
  */
 
 const getUserByEmail = async (email) => {
-  User.findOne({ email: email }, (err, resUser) => {
-    if (err) {
-      console.log(err);
-    } else {
-      return resUser;
-    }
-  });
+  let user = await User.findOne({email: email});
+  return user;
 };
 
 const createUser = async (userBody) => {
-  if (User.isEmailTaken(userBody.email)) {
+  if (await User.isEmailTaken(userBody.email)) {
     throw new ApiError(
-      httpStatus[200],
+      httpStatus.OK,
       'Email already taken'
     );
   }
-  else{
-    const newUser = await User.create({name: userBody.name, email: userBody.email, password: userBody.password})
+  
+    const newUser = await User.create(userBody)
     return newUser;
-  }
+  
 };
 // TODO: CRIO_TASK_MODULE_UNDERSTANDING_BASICS - Implement createUser(user)
 /**
@@ -71,4 +66,6 @@ const createUser = async (userBody) => {
 
  module.exports = {
   getUserById,
+  getUserByEmail,
+  createUser,
 };
