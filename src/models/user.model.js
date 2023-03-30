@@ -1,9 +1,8 @@
 const mongoose = require("mongoose");
-const { ModuleKind } = require("typescript");
 // NOTE - "validator" external library and not the custom middleware at src/middlewares/validate.js
 const validator = require("validator");
 const config = require("../config/config");
-
+const bcrypt=require('bcryptjs')
 // TODO: CRIO_TASK_MODULE_UNDERSTANDING_BASICS - Complete userSchema, a Mongoose schema for "users" collection
 const userSchema = mongoose.Schema(
   {
@@ -13,23 +12,11 @@ const userSchema = mongoose.Schema(
       trim: true,
     },
     email: {
-      type: String,
-      required: true,
-      trim: true,
-      unique: true,
-      lowercase: true,
-      validate(value){
-        if(!validator.isEmail(value)){
-          throw new Error("Invalid email");
-        }
-      }
-      
+      type:String,
+      required:true
     },
     password: {
       type: String,
-      required: true,
-      trim: true,
-      minlength:8,
       validate(value) {
         if (!value.match(/\d/) || !value.match(/[a-zA-Z]/)) {
           throw new Error(
@@ -39,14 +26,21 @@ const userSchema = mongoose.Schema(
       },
     },
     walletMoney: {
-      type: Number,
-      required: true,
-      default: config.default_wallet_money
+      type:Number,
+      default:500
     },
     address: {
       type: String,
       default: config.default_address,
     },
+    createdAt:{
+      type: Date,
+      default:Date.now
+    },
+    updatedAt:{
+      type: Date,
+      default:Date.now
+    }
   },
   // Create createdAt and updatedAt fields automatically
   {
@@ -61,9 +55,38 @@ const userSchema = mongoose.Schema(
  * @returns {Promise<boolean>}
  */
 userSchema.statics.isEmailTaken = async function (email) {
-  const user = await this.findOne({email});
-  return !!user;
-  
+  const isUserExist=await this.findOne({"email":email})
+  if(isUserExist){
+    return true
+  }
+  return false
+};
+
+userSchema.pre('save',function(next){
+  let user=this;
+
+  if(!user.isModified('password'))return next()
+
+  bcrypt.genSalt(12,(err,salt)=>{
+    if(err)return next(err)
+
+    bcrypt.hash(user.password, salt, function(err, hash) {
+      if (err) return next(err);
+      user.password = hash;
+      next();
+  });
+  })
+})
+
+userSchema.methods.isPasswordMatch = async function(candidatePassword) {
+  const isMatch=await bcrypt.compare(candidatePassword,this.password)
+
+  return isMatch
+};
+
+userSchema.methods.hasSetNonDefaultAddress = async function () {
+  const user = this;
+   return user.address !== config.default_address;
 };
 
 
@@ -74,12 +97,12 @@ userSchema.statics.isEmailTaken = async function (email) {
  * Note: The model should be accessible in a different module when imported like below
  * const User = require("<user.model file path>").User;
  */
+
 /**
  * @typedef User
  */
+const User=new mongoose.Schema(userSchema)
 
-const User = mongoose.model("User", userSchema);
-module.exports.User = User;
-// module.exports = {
-//   User,
-// }
+
+
+module.exports={User:mongoose.model("User",User)}

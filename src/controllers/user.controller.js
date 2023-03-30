@@ -16,6 +16,9 @@ const { User } = require("../models");
  *  - If data doesn't exist, throw an error using `ApiError` class
  *    - Status code should be "404 NOT FOUND"
  *    - Error message, "User not found"
+ *  - If the user whose token is provided and user whose data to be fetched don't match, throw `ApiError`
+ *    - Status code should be "403 FORBIDDEN"
+ *    - Error message, "User not found"
  *
  * 
  * Request url - <workspace-ip>:8082/v1/users/6010008e6c3477697e8eaba3
@@ -35,22 +38,42 @@ const { User } = require("../models");
  *
  * Example response status codes:
  * HTTP 200 - If request successfully completes
+ * HTTP 403 - If request data doesn't match that of authenticated user
  * HTTP 404 - If user entity not found in DB
  * 
  * @returns {User | {address: String}}
  *
  */
-const getUser = catchAsync(async (req, res) => {
-    const { userId } = req.params;
-    
-    const user =await userService.getUserById(req.params.userId);
-    if(!user){
-      throw new ApiError(httpStatus.NOT_FOUND, "User not found");
-    }
-    res.send(user)
-    
-    // res.status(200).send(user);
+ const getUser = catchAsync(async (req, res) => {
+  let user;
 
+  if (req.query.q === "address") {
+    user = await userService.getUserAddressById(req.params.userId);
+  } else {
+    user = await userService.getUserById(req.params.userId);
+  }
+  
+  if (!user) {
+    throw new ApiError(
+      httpStatus.NOT_FOUND,
+      "User not found"
+    );
+  }
+
+  if (user.email !== req.user.email) {
+    throw new ApiError(
+      httpStatus.FORBIDDEN,
+      "User not found"
+    )
+  }
+  
+  if (req.query.q === "address") {
+    res.send({
+      address: user.address
+    })
+  } else {
+    res.send(user);
+  }
 });
 
 module.exports = {
