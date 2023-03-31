@@ -10,6 +10,8 @@ const { User } = require("../models");
  * Get user details
  *  - Use service layer to get User data
  * 
+ *  - If query param, "q" equals "address", return only the address field of the user
+ *  - Else,
  *  - Return the whole user object fetched from Mongo
 
  *  - If data exists for the provided "userId", return 200 status code and the object
@@ -33,6 +35,12 @@ const { User } = require("../models");
  *     "createdAt": "2021-01-26T11:44:14.544Z",
  *     "updatedAt": "2021-01-26T11:44:14.544Z",
  *     "__v": 0
+ * }
+ * 
+ * Request url - <workspace-ip>:8082/v1/users/6010008e6c3477697e8eaba3?q=address
+ * Response - 
+ * {
+ *   "address": "ADDRESS_NOT_SET"
  * }
  * 
  *
@@ -63,8 +71,8 @@ const { User } = require("../models");
   if (user.email !== req.user.email) {
     throw new ApiError(
       httpStatus.FORBIDDEN,
-      "User not found"
-    )
+      "User not authorized to access this resource"
+    );
   }
   
   if (req.query.q === "address") {
@@ -76,6 +84,27 @@ const { User } = require("../models");
   }
 });
 
+const setAddress = catchAsync(async (req, res) => {
+
+  const user = await userService.getUserById(req.params.userId);
+
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+  if (user.email != req.user.email) {
+    throw new ApiError(
+      httpStatus.FORBIDDEN,
+      "User not authorized to access this resource"
+    );
+  }
+
+  const address = await userService.setAddress(user, req.body.address);
+
+  res.send({
+    address: address,
+  });
+});
+
 module.exports = {
-  getUser
+  getUser, setAddress
 }

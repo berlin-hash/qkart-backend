@@ -13,10 +13,11 @@ const ApiError = require("../utils/ApiError");
  * --- resolve the promise
  */
 const verifyCallback = (req, resolve, reject) => async (err, user, info) => {
+  const userId = req.params.userId
   if (user) {
     
-    if (req.params.id) {
-      if (req.params.id !== user._id.toString()) {
+    if (userId) {
+      if (userId !== user._id.toString()) {
         reject(new ApiError(httpStatus.FORBIDDEN));
       }
     }
