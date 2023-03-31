@@ -19,4 +19,14 @@ router.get(
 
 router.put("/:userId",auth,validate(userValidation.setAddress),userController.setAddress)
 
+
+
+
+router.put(
+  "/:userId",
+  auth,
+  validate(userValidation.setAddress),
+  userController.setAddress
+);
+
 module.exports = router;
